@@ -5,38 +5,61 @@
 
 #include <SNESpad.h>
 
+#undef DEBUG
+
 // put your own strobe/clock/data0/data1 pin numbers here
 SNESpad nintendo = SNESpad(2,3,4,7);
 
-// keyboard output buffer
-uint8_t buf[8] = { 0 };	
+// joystick output buffer
+//uint8_t buf[8] = { 0 };	
+#define NUM_BUTTONS	40
+#define NUM_AXES	8	       // 8 axes, X, Y, Z, etc
 
-#define KEY_LEFT_CTRL	0x01
-#define KEY_LEFT_SHIFT	0x02
-#define KEY_RIGHT_CTRL	0x10
-#define KEY_RIGHT_SHIFT	0x20
+typedef struct joyReport_t {
+    int16_t axis[NUM_AXES];
+    int16_t button[2];
+    uint8_t trailer;
+} joyReport_t;
 
-//int newstate_0 = 0;
+joyReport_t joyReport;
+
+
+//#define KEY_LEFT_CTRL	0x01
+//#define KEY_LEFT_SHIFT	0x02
+//#define KEY_RIGHT_CTRL	0x10
+//#define KEY_RIGHT_SHIFT	0x20
+//
+////int newstate_0 = 0;
 int oldstate_0 = 0;
-//int newstate_1 = 0;
+////int newstate_1 = 0;
 int oldstate_1 = 0;
-
-// define keyboard keys to press (controller 0)
-#define SNES0_KEY_A 0x11; // N
-#define SNES0_KEY_B 0x10; // M
-#define SNES0_KEY_X 0x0F; // L
-#define SNES0_KEY_Y 0x1C; // K
-#define SNES0_KEY_UP 0x52; // ArrowUp
-#define SNES0_KEY_DOWN 0x51; // ArrowDown
-#define SNES0_KEY_LEFT 0x50; // ArrowLeft
-#define SNES0_KEY_RIGHT 0x4F; // ArrowRight
-#define SNES0_KEY_L 0x05; // B
-#define SNES0_KEY_R 0x0D; // J
-#define SNES0_KEY_SELECT 0x16; // S
-#define SNES0_KEY_START 0x07;  // D
+//
+//// define keyboard keys to press (controller 0)
+//#define SNES0_KEY_A 0x11; // N
+//#define SNES0_KEY_B 0x10; // M
+//#define SNES0_KEY_X 0x0F; // L
+//#define SNES0_KEY_Y 0x1C; // K
+//#define SNES0_KEY_UP 0x52; // ArrowUp
+//#define SNES0_KEY_DOWN 0x51; // ArrowDown
+//#define SNES0_KEY_LEFT 0x50; // ArrowLeft
+//#define SNES0_KEY_RIGHT 0x4F; // ArrowRight
+//#define SNES0_KEY_L 0x05; // B
+//#define SNES0_KEY_R 0x0D; // J
+//#define SNES0_KEY_SELECT 0x16; // S
+//#define SNES0_KEY_START 0x07;  // D
 
 void setup() {
-  Serial.begin(115200);  
+  Serial.begin(115200); 
+ 
+  delay(200);
+  
+  for (uint8_t ind=0; ind<8; ind++) {
+    joyReport.axis[ind] = ind*1000;
+  }
+  for (uint8_t ind=0; ind<sizeof(joyReport.button); ind++) {
+    joyReport.button[ind] = 0;
+  } 
+  joyReport.trailer = 0;
 }
 
 void loop() {
@@ -47,21 +70,27 @@ void loop() {
   {
      // er is iets veranderd, afhandelen die hap
     
-     processButtons(oldstate_0, nintendo.state_0);
+     //processButtons(oldstate_0, nintendo.state_0);
+     joyReport.button[0] = nintendo.state_0;
+     //joyReport.button[1] = nintendo.state_1;
+     
+     sendJoystickState(&joyReport);
      
      // de nieuwe staat is de oude staat
      oldstate_0 = nintendo.state_0; 
+     oldstate_1 = nintendo.state_1;
   }
   
-  if (nintendo.state_1 != oldstate_1)
-  {
-     // er is iets veranderd, afhandelen die hap
-    
-     processButtons2();
-     
-     // de nieuwe staat is de oude staat
-     oldstate_1 = nintendo.state_1; 
-  }
+//  if (nintendo.state_1 != oldstate_1)
+//  {
+//     // er is iets veranderd, afhandelen die hap
+//    
+//     //processButtons2();
+//     joyReport.button[1] = nintendo.state_1;
+//     
+//     // de nieuwe staat is de oude staat
+//     oldstate_1 = nintendo.state_1; 
+//  }
 
 }
 
@@ -118,14 +147,30 @@ void loop() {
 //  }
 //}
 
-void sendKeyboardPress(int key, int modifier)
+void sendJoystickState(struct joyReport_t *report)
 {
-
+#ifndef DEBUG
+    Serial.write((uint8_t *)report, sizeof(joyReport_t));
+#else
+    // dump human readable output for debugging
+    for (uint8_t ind=0; ind<NUM_AXES; ind++) {
+	Serial.print("axis[");
+	Serial.print(ind);
+	Serial.print("]= ");
+	Serial.print(report->axis[ind]);
+	Serial.print(" ");
+    }
+    Serial.println();
+    for (uint8_t ind=0; ind<(NUM_BUTTONS/16); ind++) {
+	Serial.print("button[");
+	Serial.print(ind);
+	Serial.print("]= ");
+	Serial.print(report->button[ind], HEX);
+	Serial.print(" ");
+    }
+    Serial.println();
+#endif
 }
 
-void sendKeyboardRelease(int key, int modifier)
-{
-  
-}
 
 

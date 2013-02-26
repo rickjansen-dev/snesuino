@@ -1,21 +1,31 @@
 /* 
-   this example from the SNESpad Arduino library
-   displays the buttons on the joystick as bits
-   on the serial port - rahji@rahji.com
-   
-   Version: 1.3 (11/12/2010) - got rid of shortcut constructor - seems to be broken
-   
+  Snesuino
+  Version: 1.0 (26/02/2013) - first version   
 */
 
 #include <SNESpad.h>
 
-// put your own strobe/clock/data pin numbers here -- see the pinout in readme.txt
+// put your own strobe/clock/data0/data1 pin numbers here
 SNESpad nintendo = SNESpad(2,3,4,7);
 
-int newstate_0 = 0;
+//int newstate_0 = 0;
 int oldstate_0 = 0;
-int newstate_1 = 0;
+//int newstate_1 = 0;
 int oldstate_1 = 0;
+
+// define keyboard keys to press (controller 0)
+const int SNES0_KEY_A = 0x11; // N
+const int SNES0_KEY_B = 0x10; // M
+const int SNES0_KEY_X = 0x0F; // L
+const int SNES0_KEY_Y = 0x1C; // K
+const int SNES0_KEY_UP = 0x52; // ArrowUp
+const int SNES0_KEY_DOWN = 0x51; // ArrowDown
+const int SNES0_KEY_LEFT = 0x50; // ArrowLeft
+const int SNES0_KEY_RIGHT = 0x4F; // ArrowRight
+const int SNES0_KEY_L = 0x05; // B
+const int SNES0_KEY_R = 0x0D; // J
+const int SNES0_KEY_SELECT = 0x16; // S
+const int SNES0_KEY_START = 0x07;  // D
 
 void setup() {
   Serial.begin(115200);  
@@ -24,70 +34,45 @@ void setup() {
 void loop() {
   
   nintendo.buttons();
-  newstate_0 = nintendo.state_0;
-  newstate_1 = nintendo.state_1;
-  
-  if (newstate_0 != oldstate_0)
+
+  if (nintendo.state_0 != oldstate_0)
   {
      // er is iets veranderd, afhandelen die hap
     
-     processButtons();
+     processButtons(oldstate_0, nintendo.state_0);
      
      // de nieuwe staat is de oude staat
-     oldstate_0 = newstate_0; 
+     oldstate_0 = nintendo.state_0; 
   }
   
-  if (newstate_1 != oldstate_1)
+  if (nintendo.state_1 != oldstate_1)
   {
      // er is iets veranderd, afhandelen die hap
     
      processButtons2();
      
      // de nieuwe staat is de oude staat
-     oldstate_1 = newstate_1; 
+     oldstate_1 = nintendo.state_1; 
   }
-  
-//  if (state & SNES_A)
-//  {
-//    if (stateA == false)
-//    {
-//      // A is pressed! send a A to serial port
-//      Serial.println("A pressed");  
-//      stateA = !stateA;
-//    }
-//  } 
-//  else
-//  {
-//    if (stateA == true)
-//    {
-//      // A is not pressed! send END_A if A was pressed previously
-//      Serial.println("A released"); 
-//      stateA = !stateA;
-//    }
-//  }
 
-  // shows the shifted bits from the joystick
-  // buttons are high (1) when up 
-  // and low (0) when pressed
-  //Serial.println(~state, BIN);
-
-  //delay(500);
 }
 
-void processButtons()
+// yes this is ugly, but it is still in testing
+
+void processButtons(int oldstate, int newstate)
 {
-  processButton(SNES_A);
-    processButton(SNES_B);
-      processButton(SNES_X);
-        processButton(SNES_Y);
-          processButton(SNES_UP);
-            processButton(SNES_DOWN);
-              processButton(SNES_LEFT);
-                processButton(SNES_RIGHT);
-                  processButton(SNES_START);
-                    processButton(SNES_SELECT);
-                      processButton(SNES_L);
-                        processButton(SNES_R);
+  processButton(SNES_A, SNES0_KEY_A, oldstate, newstate);
+  processButton(SNES_B, SNES0_KEY_B, oldstate, newstate);
+  processButton(SNES_X, SNES0_KEY_X, oldstate, newstate);
+  processButton(SNES_Y, SNES0_KEY_Y, oldstate, newstate);
+  processButton(SNES_UP, SNES0_KEY_UP, oldstate, newstate);
+  processButton(SNES_DOWN, SNES0_KEY_DOWN, oldstate, newstate);
+  processButton(SNES_LEFT, SNES0_KEY_LEFT, oldstate, newstate);
+  processButton(SNES_RIGHT, SNES0_KEY_RIGHT, oldstate, newstate);
+  processButton(SNES_START, SNES0_KEY_START, oldstate, newstate);
+  processButton(SNES_SELECT, SNES0_KEY_SELECT, oldstate, newstate);
+  processButton(SNES_L, SNES0_KEY_L, oldstate, newstate);
+  processButton(SNES_R, SNES0_KEY_R, oldstate, newstate);
 }
 
 void processButtons2()
@@ -107,15 +92,15 @@ void processButtons2()
 }
 
 
-void processButton(int button)
+void processButton(int button, int mappedkey, int oldstate, int newstate)
 {
-  if (!(oldstate_0 & button) && (newstate_0 & button))
+  if (!(oldstate & button) && (newstate & button))
   {
      // button press
      Serial.print(button);
      Serial.println(" pressed (1)");
   }
-  if ((oldstate_0 & button) && !(newstate_0 & button))
+  if ((oldstate & button) && !(newstate & button))
   {
      Serial.print(button);
      Serial.println(" released (1)");
@@ -124,13 +109,13 @@ void processButton(int button)
 
 void processButton2(int button)
 {
-  if (!(oldstate_1 & button) && (newstate_1 & button))
+  if (!(oldstate_1 & button) && (nintendo.state_1 & button))
   {
      // button press
      Serial.print(button);
      Serial.println(" pressed (2)");
   }
-  if ((oldstate_1 & button) && !(newstate_1 & button))
+  if ((oldstate_1 & button) && !(nintendo.state_1 & button))
   {
      Serial.print(button);
      Serial.println(" released (2)");
